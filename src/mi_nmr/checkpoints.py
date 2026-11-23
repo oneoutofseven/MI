@@ -12,8 +12,7 @@ import numpy as np
 import torch
 
 from .data import TASKS, resource
-from .model import ParticipantEncoder
-from .readout import InflammationModel
+from .encoder import ParticipantEncoder
 
 
 def digest(path):
@@ -145,6 +144,8 @@ def readout_record(path, encoder_path=None):
 
 
 def make_readout(record):
+    from .finetuning.readout import InflammationModel
+
     encoder = ParticipantEncoder(record["layout"], record["encoder"])
     state = record["state"]
     model = InflammationModel(encoder, state["z_mean"], state["z_std"], 0)

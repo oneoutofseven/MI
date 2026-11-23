@@ -1,0 +1,2 @@
+include docs/data.md docs/training.md
+include examples/make_demo.py examples/small.json

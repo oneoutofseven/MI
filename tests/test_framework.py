@@ -116,13 +116,19 @@ def test_new_people_and_partitions(data, tmp_path):
 
 
 def test_cli_and_resume(data, tmp_path, monkeypatch):
-    from mi_nmr import training
+    from mi_nmr import engine
+
+    def run_stage_script(stage, args):
+        script = ROOT / stage / "train.py"
+        with monkeypatch.context() as patch:
+            patch.setattr("sys.argv", [str(script), *args])
+            runpy.run_path(str(script), run_name="__main__")
 
     base = ["--data", str(data), "--device", "cpu", "--threads", "1"]
     cfg = ["--config", str(SMALL)]
     p, f = tmp_path / "pre", tmp_path / "fit"
     pretrain = ["pretrain", *base, *cfg, "--out", str(p)]
-    real_save = training.save_json
+    real_save = engine.save_json
 
     def interrupt_after_epoch(path, value):
         if len(value) == 1:
@@ -130,17 +136,17 @@ def test_cli_and_resume(data, tmp_path, monkeypatch):
         real_save(path, value)
 
     with monkeypatch.context() as patch:
-        patch.setattr(training, "save_json", interrupt_after_epoch)
+        patch.setattr(engine, "save_json", interrupt_after_epoch)
         with pytest.raises(KeyboardInterrupt):
             main(pretrain)
     main([*pretrain, "--resume"])
     clean = tmp_path / "clean"
-    main(["pretrain", *base, *cfg, "--out", str(clean)])
+    run_stage_script("pretraining", [*base, *cfg, "--out", str(clean)])
     assert json.loads((p / "history.json").read_text()) == json.loads(
         (clean / "history.json").read_text()
     )
     tune = ["finetune", *base, *cfg, "--encoder", str(p / "best.pt"), "--out", str(f)]
-    main(tune)
+    run_stage_script("finetuning", tune[1:])
     main([*tune, "--resume"])
     checkpoint = ["--checkpoint", str(f / "best.pt")]
     result = tmp_path / "metrics.json"

@@ -4,7 +4,7 @@ MI learns a 512-dimensional representation of each participant from 107 plasma N
 
 ## Model
 
-Seventy measurements describe 14 lipoprotein subclasses. Each subclass has a particle concentration and four lipid concentrations. During pretraining, a 12-layer Transformer learns from both randomly hidden fields and masks that hide an entire subclass. The decoder predicts a lipid subtotal and four fractions per subclass, whose products recover the individual lipid concentrations. The downstream ensemble combines the participant representation with clinical covariates and uses lipid composition to scale each member’s hidden features. [Architecture and training objectives](docs/training.md#pretraining)
+Seventy measurements describe 14 lipoprotein subclasses. Each subclass has a particle concentration and four lipid concentrations. During pretraining, a 12-layer Transformer learns from both randomly hidden fields and masks that hide an entire subclass. The decoder predicts a lipid subtotal and four fractions per subclass, whose products recover the individual lipid concentrations. The downstream ensemble combines the participant representation with clinical covariates and uses lipid composition to scale each member’s hidden features. [Pretraining model and objectives](pretraining/#masking-and-reconstruction) · [Fine-tuning readout](finetuning/#readout-and-model-selection)
 
 ## Installation
 
@@ -23,10 +23,10 @@ For a different CUDA version, select the corresponding PyTorch build. [PyTorch i
 
 ## Pretrain on a GPU
 
-Prepare a cohort CSV with one row per participant, the 107 named NMR measurements and the two split columns. [Input format and field list](docs/data.md)
+From the repository root, run the pretraining script on a cohort CSV with the 107 NMR fields and split assignments. [Pretraining code and guide](pretraining/) · [Input format](docs/data.md)
 
 ```bash
-mi-nmr pretrain \
+python pretraining/train.py \
   --data data/cohort.csv \
   --device cuda:0 \
   --out runs/pretrain
@@ -36,14 +36,16 @@ The 12-layer encoder trains for up to 200 epochs with an effective batch size of
 
 ## Fine-tune on a GPU
 
-Use the same cohort CSV and split assignments. For supervised training, include age, sex, BMI, smoking status and the five phenotype columns (`CRP`, `neutrophils`, `monocytes`, `lymphocytes`, `eosinophils`).
+Use the same cohort CSV and split assignments. For supervised training, include age, sex, BMI, smoking status and the five phenotype columns. [Fine-tuning code and guide](finetuning/)
 
 ```bash
-mi-nmr finetune \
+python finetuning/train.py \
   --data data/cohort.csv \
   --encoder runs/pretrain/best.pt \
   --device cuda:0 \
   --out runs/finetune
 ```
 
-All encoder layers and the five-output readout are updated jointly, with learning rates of 2e-6 and 5e-4, respectively. Fine-tuning runs for up to 40 epochs and stops after 10 epochs without improvement. The lowest five-task validation MSE selects `runs/finetune/best.pt`. [Held-out evaluation](docs/training.md#fine-tuning-and-evaluation) · [Embeddings and phenotype predictions](docs/training.md#embeddings-and-phenotype-predictions)
+All encoder layers and the five-output readout are updated jointly, with learning rates of 2e-6 and 5e-4, respectively. Fine-tuning runs for up to 40 epochs and stops after 10 epochs without improvement. The lowest five-task validation MSE selects `runs/finetune/best.pt`. [Held-out evaluation](finetuning/#held-out-evaluation) · [Phenotype predictions](finetuning/#phenotype-predictions)
+
+The installed commands `mi-nmr pretrain` and `mi-nmr finetune` accept the same arguments as the scripts above.

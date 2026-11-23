@@ -16,4 +16,4 @@ work/
 *.csv
 *.parquet
 .env
-/weights/
+weights/

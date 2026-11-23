@@ -1,0 +1,152 @@
+"""Field tokens, Transformer blocks and participant embeddings."""
+
+import math
+
+import torch
+from torch import nn
+from torch.nn import functional as F
+from torch.utils.checkpoint import checkpoint
+
+
+class FieldTokenizer(nn.Module):
+    def __init__(self, layout, width, bases=100):
+        super().__init__()
+        self.bases = bases
+        self.identity = nn.Embedding(len(layout["columns"]), width)
+        self.metadata = nn.ModuleDict(
+            {
+                name + "_embedding": nn.Embedding(len(vocab), width)
+                for name, vocab in layout["vocabularies"].items()
+            }
+        )
+        for name, values in layout["metadata_ids"].items():
+            self.register_buffer(name + "_ids", torch.tensor(values, dtype=torch.long))
+        self.value_w1 = nn.Linear(1, bases, bias=False)
+        self.value_w2 = nn.Linear(bases, bases, bias=False)
+        self.value_alpha = nn.Parameter(torch.empty(bases))
+        self.value_lookup = nn.Linear(bases, width, bias=False)
+        # Row0=CLS,row1=true missing,row2=artificially hidden.
+        self.special = nn.Embedding(3, width)
+
+    def forward(self, values, observed, visible, field_ids):
+        clean = torch.where(visible, values, torch.zeros_like(values))
+        v1 = F.leaky_relu(self.value_w1(clean[..., None]))
+        weights = F.softmax(self.value_w2(v1) + self.value_alpha * v1, dim=-1)
+        numeric = self.value_lookup(weights) * math.sqrt(self.bases)
+        state = torch.where(observed, 2, 1)
+        numeric = torch.where(visible[..., None], numeric, self.special(state))
+        fields = 0.5 * (numeric + self.identity(field_ids)[None])
+        metadata = sum(
+            layer(getattr(self, name.removesuffix("_embedding") + "_ids")[field_ids])[None]
+            for name, layer in self.metadata.items()
+        )
+        fields = fields + 0.1 * metadata / math.sqrt(len(self.metadata))
+        return torch.cat([self.special.weight[0][None, None].expand(len(values), 1, -1), fields], 1)
+
+
+class Attention(nn.Module):
+    def __init__(self, width, heads):
+        super().__init__()
+        if width % heads:
+            raise ValueError("Attention width must be divisible by its number of heads")
+        self.heads = heads
+        self.qkv = nn.Linear(width, 3 * width, bias=False)
+        self.output = nn.Linear(width, width, bias=False)
+
+    def forward(self, states, allowed_keys):
+        batch, length, width = states.shape
+        q, k, v = (
+            self.qkv(states)
+            .reshape(batch, length, 3, self.heads, width // self.heads)
+            .permute(2, 0, 3, 1, 4)
+            .unbind(0)
+        )
+        value = F.scaled_dot_product_attention(
+            q, k, v, attn_mask=allowed_keys[:, None, None, :], dropout_p=0.0, is_causal=False
+        )
+        return self.output(value.transpose(1, 2).reshape(batch, length, width))
+
+
+class Block(nn.Module):
+    def __init__(self, width, heads, hidden, dropout):
+        super().__init__()
+        self.attention_norm = nn.LayerNorm(width)
+        self.attention = Attention(width, heads)
+        self.ffn_norm = nn.LayerNorm(width)
+        self.gate_up = nn.Linear(width, 2 * hidden, bias=False)
+        self.down = nn.Linear(hidden, width, bias=False)
+        self.dropout = nn.Dropout(dropout)
+
+    def forward(self, states, allowed_keys):
+        states = states + self.dropout(self.attention(self.attention_norm(states), allowed_keys))
+        gate, value = self.gate_up(self.ffn_norm(states)).chunk(2, -1)
+        return states + self.dropout(self.down(F.silu(gate) * value))
+
+
+class ParticipantEncoder(nn.Module):
+    def __init__(self, layout, settings):
+        super().__init__()
+        self.n_fields = len(layout["columns"])
+        self.settings = dict(settings)
+        width = settings["width"]
+        self.tokenizer = FieldTokenizer(layout, width, settings["soft_bases"])
+        self.blocks = nn.ModuleList(
+            [
+                Block(width, settings["heads"], settings["ffn_hidden"], settings["dropout"])
+                for _ in range(settings["layers"])
+            ]
+        )
+        self.readout = nn.Sequential(
+            nn.LayerNorm(width),
+            nn.Linear(width, settings["embedding_width"]),
+            nn.LayerNorm(settings["embedding_width"]),
+        )
+
+    def forward(
+        self,
+        values,
+        observed=None,
+        visible=None,
+        field_ids=None,
+        *,
+        check=True,
+        return_fields=False,
+    ):
+        observed = torch.isfinite(values) if observed is None else observed
+        visible = observed if visible is None else visible
+        if field_ids is None:
+            field_ids = torch.arange(values.shape[1], device=values.device)
+        if check:
+            if values.ndim != 2 or observed.shape != values.shape or visible.shape != values.shape:
+                raise ValueError("Expected aligned participant-by-field inputs")
+            if observed.dtype != torch.bool or visible.dtype != torch.bool:
+                raise ValueError("Observation masks must be Boolean")
+            if (
+                field_ids.ndim != 1
+                or len(field_ids) != values.shape[1]
+                or len(field_ids.unique()) != len(field_ids)
+            ):
+                raise ValueError("Field identities must be unique and follow values when permuted")
+            if (field_ids < 0).any() or (field_ids >= self.n_fields).any():
+                raise ValueError("Unknown field identity")
+            if (visible & ~observed).any() or not torch.isfinite(values[visible]).all():
+                raise ValueError("Visible values must have actually been observed and be finite")
+        states = self.tokenizer(values, observed, visible, field_ids)
+        allowed = torch.cat(
+            [torch.ones(len(values), 1, dtype=torch.bool, device=values.device), visible], 1
+        )
+        for block in self.blocks:
+            if (
+                self.settings.get("activation_checkpointing", False)
+                and self.training
+                and torch.is_grad_enabled()
+            ):
+                states = checkpoint(
+                    block, states, allowed, use_reentrant=False, preserve_rng_state=True
+                )
+            else:
+                states = block(states, allowed)
+        participant = self.readout(states[:, 0])
+        if return_fields:
+            return participant, states[:, 1:]
+        return participant
