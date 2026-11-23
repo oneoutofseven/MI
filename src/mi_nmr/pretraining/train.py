@@ -7,10 +7,10 @@ import numpy as np
 import torch
 from torch.nn.utils import clip_grad_norm_
 
-from mi_nmr.checkpoints import tensor_dict
-from mi_nmr.composition import train_statistics
-from mi_nmr.data import cohort, data_digest, measurement_batch, partition_key, resource, rows_for
-from mi_nmr.engine import autocast, batches, fit_epochs
+from mi_nmr.shared.checkpoints import tensor_dict
+from mi_nmr.shared.composition import train_statistics
+from mi_nmr.shared.data import cohort, data_digest, measurement_batch, partition_key, resource, rows_for
+from mi_nmr.shared.engine import autocast, batches, fit_epochs
 from mi_nmr.pretraining.masks import training_bank, validation_plans
 from mi_nmr.pretraining.model import FieldSupervisedModel, MeasurementModel
 from mi_nmr.pretraining.objectives import FieldObjective, weighted_loss
@@ -134,6 +134,6 @@ def pretrain(path, out, config, device, resume=False):
 
 
 if __name__ == "__main__":
-    from mi_nmr.cli import main
+    from mi_nmr.shared.cli import main
 
     main(["pretrain", *sys.argv[1:]])

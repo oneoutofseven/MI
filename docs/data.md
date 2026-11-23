@@ -1,6 +1,6 @@
 # Cohort format
 
-Use one row per participant in a UTF-8 CSV. The loader aligns NMR fields by header, so the column order can vary. Supply concentrations in the original units and leave missing measurements empty. The 107-field schema includes the original baseline alanine field `p23460_i0`. [Field names, units and subclass membership](../src/mi_nmr/schema.json)
+Use one row per participant in a UTF-8 CSV. The loader aligns NMR fields by header, so the column order can vary. Supply concentrations in the original units and leave missing measurements empty. The 107-field schema includes the original baseline alanine field `p23460_i0`. [Field names, units and subclass membership](../src/mi_nmr/shared/schema.json)
 
 | Columns | Values |
 | --- | --- |

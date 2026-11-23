@@ -7,7 +7,7 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 
-from mi_nmr.encoder import ParticipantEncoder
+from mi_nmr.shared.encoder import ParticipantEncoder
 
 
 class NumericDecoder(nn.Module):

@@ -17,7 +17,7 @@ ROLES = ("pretrain_split", "finetune_split")
 
 
 def resource(name):
-    return json.loads(files("mi_nmr").joinpath(name).read_text(encoding="utf8"))
+    return json.loads(files(__package__).joinpath(name).read_text(encoding="utf8"))
 
 
 def cohort(path, *, roles=False, clinical=False, targets=False):

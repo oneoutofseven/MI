@@ -8,8 +8,8 @@ import torch
 from scipy.stats import spearmanr
 from torch.nn.utils import clip_grad_norm_
 
-from mi_nmr.checkpoints import digest, encoder_record, make_encoder, numpy_dict, tensor_dict
-from mi_nmr.data import (
+from mi_nmr.shared.checkpoints import digest, encoder_record, make_encoder, numpy_dict, tensor_dict
+from mi_nmr.shared.data import (
     TASKS,
     clinical_values,
     cohort,
@@ -22,7 +22,7 @@ from mi_nmr.data import (
     rows_for,
     transformed_targets,
 )
-from mi_nmr.engine import autocast, batches, fit_epochs
+from mi_nmr.shared.engine import autocast, batches, fit_epochs
 from mi_nmr.finetuning.readout import InflammationModel
 
 
@@ -164,6 +164,6 @@ def finetune(path, encoder_path, out, config, device, resume=False):
 
 
 if __name__ == "__main__":
-    from mi_nmr.cli import main
+    from mi_nmr.shared.cli import main
 
     main(["finetune", *sys.argv[1:]])

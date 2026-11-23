@@ -20,19 +20,19 @@ dependencies = [
 test = ["pytest>=7"]
 
 [project.scripts]
-mi-nmr = "mi_nmr.cli:main"
+mi-nmr = "mi_nmr.shared.cli:main"
 
 [tool.setuptools]
-packages = ["mi_nmr", "mi_nmr.pretraining", "mi_nmr.finetuning"]
+package-dir = { "" = "src" }
 include-package-data = false
 
-[tool.setuptools.package-dir]
-mi_nmr = "src/mi_nmr"
-"mi_nmr.pretraining" = "pretraining"
-"mi_nmr.finetuning" = "finetuning"
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["mi_nmr", "mi_nmr.*"]
+namespaces = false
 
 [tool.setuptools.package-data]
-mi_nmr = ["schema.json", "recipe.json"]
+"mi_nmr.shared" = ["schema.json", "recipe.json"]
 "mi_nmr.pretraining" = ["README.md"]
 "mi_nmr.finetuning" = ["README.md"]
 

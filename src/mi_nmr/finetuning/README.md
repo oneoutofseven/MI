@@ -4,10 +4,10 @@ Fine-tune all NMR encoder layers and a composition-modulated ensemble to predict
 
 ## Train
 
-Run from the repository root after pretraining. Use the same participants, row order and split assignments. Add the four clinical columns (age, sex, BMI and smoking) and the five outcome columns. [Pretraining](../pretraining/) · [Cohort format](../docs/data.md)
+Run from the repository root after pretraining. Use the same participants, row order and split assignments. Add the four clinical columns (age, sex, BMI and smoking) and the five outcome columns. [Pretraining](../pretraining/) · [Cohort format](../../../docs/data.md)
 
 ```bash
-python finetuning/train.py \
+python -m mi_nmr.finetuning.train \
   --data data/cohort.csv \
   --encoder runs/pretrain/best.pt \
   --device cuda:0 \

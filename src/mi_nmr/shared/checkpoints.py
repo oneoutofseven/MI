@@ -144,7 +144,7 @@ def readout_record(path, encoder_path=None):
 
 
 def make_readout(record):
-    from .finetuning.readout import InflammationModel
+    from ..finetuning.readout import InflammationModel
 
     encoder = ParticipantEncoder(record["layout"], record["encoder"])
     state = record["state"]

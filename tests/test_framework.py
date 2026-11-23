@@ -8,12 +8,12 @@ import pytest
 import torch
 
 from mi_nmr.cli import main
-from mi_nmr.composition import composition_coordinates, train_statistics
-from mi_nmr.data import TASKS, cohort, measurement_batch, resource
-from mi_nmr.masks import training_bank
-from mi_nmr.model import FieldSupervisedModel, MeasurementModel
-from mi_nmr.objectives import FieldObjective
-from mi_nmr.training import scores
+from mi_nmr.shared.composition import composition_coordinates, train_statistics
+from mi_nmr.shared.data import TASKS, cohort, measurement_batch, resource
+from mi_nmr.pretraining.masks import training_bank
+from mi_nmr.pretraining.model import FieldSupervisedModel, MeasurementModel
+from mi_nmr.pretraining.objectives import FieldObjective
+from mi_nmr.finetuning.train import scores
 
 ROOT = Path(__file__).resolve().parents[1]
 SMALL = ROOT / "examples" / "small.json"
@@ -116,10 +116,10 @@ def test_new_people_and_partitions(data, tmp_path):
 
 
 def test_cli_and_resume(data, tmp_path, monkeypatch):
-    from mi_nmr import engine
+    from mi_nmr.shared import engine
 
     def run_stage_script(stage, args):
-        script = ROOT / stage / "train.py"
+        script = ROOT / "src" / "mi_nmr" / stage / "train.py"
         with monkeypatch.context() as patch:
             patch.setattr("sys.argv", [str(script), *args])
             runpy.run_path(str(script), run_name="__main__")

@@ -6,7 +6,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from mi_nmr.data import TASKS, resource
+from mi_nmr.shared.data import TASKS, resource
 
 
 def generate(path):

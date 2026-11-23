@@ -1,13 +1,13 @@
 # NMR pretraining
 
-Train a 12-layer field Transformer on 107 plasma NMR measurements to learn a 512-dimensional representation for each participant. The targets are observed measurements hidden during training. [Participant encoder](../src/mi_nmr/encoder.py) · [Reconstruction model](model.py)
+Train a 12-layer field Transformer on 107 plasma NMR measurements to learn a 512-dimensional representation for each participant. The targets are observed measurements hidden during training. [Participant encoder](../shared/encoder.py) · [Reconstruction model](model.py)
 
 ## Train
 
-After installation, run the command from the repository root. Supply the participant ID, the 107 NMR columns and the two stage-specific split columns. [Installation](../README.md#installation) · [Cohort format](../docs/data.md)
+After installation, run the command from the repository root. Supply the participant ID, the 107 NMR columns and the two stage-specific split columns. [Installation](../../../README.md#installation) · [Cohort format](../../../docs/data.md)
 
 ```bash
-python pretraining/train.py \
+python -m mi_nmr.pretraining.train \
   --data data/cohort.csv \
   --device cuda:0 \
   --out runs/pretrain
@@ -29,7 +29,7 @@ The participant decoder predicts particle concentration, a four-lipid subtotal a
 
 A subclass qualifies for the composition loss when all four lipids were measured, are nonnegative, have a positive subtotal and are all artificially hidden. Checkpoint selection uses mean participant reconstruction MAE across fixed random 15%, 30% and 50% validation masks.
 
-The default uses AdamW with a peak learning rate of 1e-4, five warm-up epochs and cosine decay. Training runs for up to 200 epochs with patience 20 and a 30-epoch minimum. To compare masking schemes with the same architecture, copy the default configuration and set `mask` to `ordinary` for randomized masks with matched plan sizes and per-field counts, or to `subclass` for exclusively subclass-first masks with matched plan sizes. Set `field_weight` to zero to remove the auxiliary field loss. [Default configuration](../src/mi_nmr/recipe.json)
+The default uses AdamW with a peak learning rate of 1e-4, five warm-up epochs and cosine decay. Training runs for up to 200 epochs with patience 20 and a 30-epoch minimum. To compare masking schemes with the same architecture, copy the default configuration and set `mask` to `ordinary` for randomized masks with matched plan sizes and per-field counts, or to `subclass` for exclusively subclass-first masks with matched plan sizes. Set `field_weight` to zero to remove the auxiliary field loss. [Default configuration](../shared/recipe.json)
 
 [Mask construction](masks.py) · [Loss computation](objectives.py)
 

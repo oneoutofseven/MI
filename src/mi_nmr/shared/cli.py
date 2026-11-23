@@ -97,7 +97,7 @@ def inference(args, device):
 
         atomic_write(args.out, write_npz)
         return
-    from .finetuning.train import predict_rows, scores
+    from ..finetuning.train import predict_rows, scores
 
     evaluate = args.action == "evaluate"
     record = readout_record(args.checkpoint, args.encoder)
@@ -153,11 +153,11 @@ def main(argv=None):
     if args.action in ("pretrain", "finetune"):
         cfg = json.loads(args.config.read_text()) if args.config else resource("recipe.json")
         if args.action == "pretrain":
-            from .pretraining.train import pretrain
+            from ..pretraining.train import pretrain
 
             pretrain(args.data, args.out, cfg, device, args.resume)
         else:
-            from .finetuning.train import finetune
+            from ..finetuning.train import finetune
 
             finetune(args.data, args.encoder, args.out, cfg, device, args.resume)
     else:
