@@ -1,0 +1,69 @@
+{
+  "seed": 20261118,
+  "encoder": {
+    "layers": 12,
+    "width": 768,
+    "heads": 12,
+    "ffn_hidden": 2048,
+    "embedding_width": 512,
+    "soft_bases": 100,
+    "dropout": 0.1,
+    "activation_checkpointing": false
+  },
+  "decoder": {
+    "query_width": 64,
+    "hidden": 512,
+    "dropout": 0.1
+  },
+  "masking": {
+    "seed": 2026111801,
+    "validation_seed": 2026111802,
+    "rate_range": [
+      0.15,
+      0.5
+    ],
+    "bank_size": 4096,
+    "swap_attempts": 100000,
+    "validation_rates": [
+      0.15,
+      0.3,
+      0.5
+    ]
+  },
+  "mask": "mixed",
+  "field_weight": 0.2,
+  "composition_weight": 0.2,
+  "decoder_mode": "measurement",
+  "pretraining": {
+    "max_epochs": 200,
+    "minimum_epochs": 30,
+    "patience": 20,
+    "effective_batch_size": 512,
+    "micro_batch_size": 32,
+    "validation_micro_batch_size": 64,
+    "learning_rate": 0.0001,
+    "minimum_learning_rate": 1e-06,
+    "warmup_epochs": 5,
+    "weight_decay": 0.01,
+    "betas": [
+      0.9,
+      0.98
+    ],
+    "eps": 1e-07,
+    "gradient_clip_norm": 1.0,
+    "amp_bfloat16": true,
+    "minimum_improvement": 1e-06
+  },
+  "finetuning": {
+    "seed": 20261120,
+    "max_epochs": 40,
+    "patience": 10,
+    "effective_batch_size": 512,
+    "micro_batch_size": 128,
+    "encoder_lr": 2e-06,
+    "head_lr": 0.0005,
+    "encoder_weight_decay": 0.0001,
+    "head_weight_decay": 0.0003,
+    "amp_bfloat16": true
+  }
+}

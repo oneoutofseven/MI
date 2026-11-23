@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mi-nmr"
+version = "0.1.0"
+description = "Measurement-aware representation learning for plasma NMR"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "numpy>=1.24,<3",
+  "pandas>=2,<3",
+  "torch>=2.3,<3",
+  "scipy>=1.10,<2",
+  "tabm==0.0.3",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=7"]
+
+[project.scripts]
+mi-nmr = "mi_nmr.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+mi_nmr = ["schema.json", "recipe.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
