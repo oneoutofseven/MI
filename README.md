@@ -32,8 +32,18 @@ mi-nmr pretrain \
   --out runs/pretrain
 ```
 
-This runs the full 12-layer encoder with an effective batch size of 512 for up to 200 epochs. [Default training configuration](src/mi_nmr/recipe.json)
+The 12-layer encoder trains for up to 200 epochs with an effective batch size of 512. The checkpoint with the lowest validation reconstruction MAE is saved to `runs/pretrain/best.pt`. [Default training configuration](src/mi_nmr/recipe.json)
 
-## Downstream analysis
+## Fine-tune on a GPU
 
-Fine-tune the encoder and five-phenotype readout jointly, evaluate on held-out participants or extract a participant embedding for another analysis. [Downstream workflow](docs/training.md#fine-tuning-and-evaluation)
+Use the same cohort CSV and split assignments. For supervised training, include age, sex, BMI, smoking status and the five phenotype columns (`CRP`, `neutrophils`, `monocytes`, `lymphocytes`, `eosinophils`).
+
+```bash
+mi-nmr finetune \
+  --data data/cohort.csv \
+  --encoder runs/pretrain/best.pt \
+  --device cuda:0 \
+  --out runs/finetune
+```
+
+All encoder layers and the five-output readout are updated jointly, with learning rates of 2e-6 and 5e-4, respectively. Fine-tuning runs for up to 40 epochs and stops after 10 epochs without improvement. The lowest five-task validation MSE selects `runs/finetune/best.pt`. [Held-out evaluation](docs/training.md#fine-tuning-and-evaluation) · [Embeddings and phenotype predictions](docs/training.md#embeddings-and-phenotype-predictions)
